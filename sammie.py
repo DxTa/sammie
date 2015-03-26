@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, pdb
+import sys, os, pdb, json
 import BaseHTTPServer
 import youtube_dl
 import xml.etree.ElementTree as ET
@@ -43,7 +43,7 @@ class Zing:
 
     def play(self):
         try:
-            os.system('nyxmms2 add %s/%s.mp3 && nyxmms2 play' % (AUDIOS_DIR, self.zid))
+            os.system('xmms2 add %s/%s.mp3 && xmms2 play' % (AUDIOS_DIR, self.zid))
         except:
             print "Make sure xmms2 is running and nyxmms2 is installed"
             raise
@@ -112,18 +112,18 @@ def index():
             try:
                 song = Zing(request.form['url'])
                 song.fetch()
-                #song.play()
+                song.play()
                 data = { 'success': True }
                 current_app.cache.set(request.environ['REMOTE_ADDR'], 'dolly', timeout=600)
             except Exception, e:
                 data = { 'error': str(e).encode('utf-8') }
         # response json
         resp = Response(
-                response=data,
+                response=json.dumps(data),
                 status=200,
                 mimetype="application/json")
         return resp
 
 if __name__ == "__main__":
     print("\m/....")
-    app.run(debug=True)
+    app.run(host='0.0.0.0', debug=True)
