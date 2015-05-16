@@ -65,39 +65,47 @@ class Youtube:
     def my_hook(d):
         if d['status'] == 'finished':
             print('Done downloading, now converting ...')
-    ydl_opts = {
-        'outtmpl': '/tmp/%(id)s.%(ext)s',
-        'format': 'bestaudio/best',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }],
-        'logger': MyLogger(),
-        'progress_hooks': [my_hook],
-    }
-    ydl = youtube_dl.YoutubeDL(ydl_opts)
 
     def __init__(self, url):
         self.url = url
+        ydl_opts = {
+            'outtmpl': '/tmp/%(id)s.%(ext)s',
+            'format': 'bestaudio/best',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+            'logger': MyLogger(),
+            # 'progress_hooks': [self.my_hook],
+        }
+        self.ydl = youtube_dl.YoutubeDL(ydl_opts)
 
     def fetch(self):
         # youtube
         url = self.url #url go here
         print("Downloading from %s ..." % url)
-        with ydl:
-            rs = ydl.extract_info(
+        with self.ydl:
+            rs = self.ydl.extract_info(
                     url,
                     )
             if 'entries' in rs: video = rs['entries'][0] # can be playlist or a list of videos
             else: video = rs # just a video
 
+            self.zid = video['id']
             # record = (video['id'], video['title'], "%s/%s.mp3" % (AUDIOS_DIR, video['id']) )
             # with open('playlist.txt', 'a') as pfile:
             #     pfile.write(record)
 
             video_url = video['url']
             print(video_url)
+
+    def play(self):
+        try:
+            os.system('xmms2 add %s/%s.mp3 && xmms2 play' % (AUDIOS_DIR, self.zid))
+        except:
+            print "Make sure xmms2 is running and nyxmms2 is installed"
+            raise
 
 
 @app.route("/", methods=['GET', 'POST'])
@@ -110,8 +118,14 @@ def index():
             data = { 'error': 'Wait for at least 10 mins'}
         else:
             try:
-                song = Zing(request.form['url'])
-                song.fetch()
+                if "youtube" in request.form['url']:
+                    song = Youtube(request.form['url'])
+                    song.fetch()
+                elif "mp3.zing" in request.form['url']:
+                    song = Zing(request.form['url'])
+                    song.fetch()
+                else:
+                    raise Exception('message', 'Wrong type of URL, only supports Youtube|Mp3.Zing')
                 song.play()
                 data = { 'success': True }
                 current_app.cache.set(request.environ['REMOTE_ADDR'], 'dolly', timeout=600)
