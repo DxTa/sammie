@@ -1,5 +1,5 @@
 #Sammie
-
+small/simple music hub for my home :-)
 ###Requirement
 xmms2, https://xmms2.org/wiki/Main_Page
 python libs: youtube_dl, flask, Flash-cache
